@@ -20,14 +20,17 @@ AeroLap utilizes a **binary struct-packing approach** over Serial (USB-C) to ach
 ## ✨ Key Features
 
 ### Flight Mode (Current Implementation)
+_Implemented primarily for **FSX** using FSUIPC for bridging telemetry_
 * **Annunciator Bars:** Dedicated Top and Bottom LED strips for "Master Alerts" (Warning/Caution/Overspeed) and "Configuration" (Landing Gear/Flaps/Speedbrakes).
 * **Phase-of-Flight Logic:** Automated "Minimums" alerting based on Radio Altitude (AGL) and Autopilot state tracking.
 * **Digital Gauges:** Triple 7-segment displays for real-time Airspeed, Altitude, and Flap Position.
-* **Autopilot Adjustment:** (In development) Allowing you to be able to change the state/position of the autopilot with potentiometer inputs.
+* **Autopilot Adjustment:** (In development) Be able to change the state/position of the autopilot with rotary encoder (continious potentiameter) inputs.
 
 ### Racing Mode (In Development)
+_Implemented primarily for **Assetto Corsa** using a direct serial connection for bridging telemetry_
 * **Shift Lights:** Adaptive RPM-based LED color gradients.
-* **Race Stats:** Lap time delta, gear indicator, and flag status (Yellow/Blue/Red).
+* **Race Stats:** Lap time delta and flag status (etc. Yellow Flag).
+* **Car Stats:** Gear indicator, fuel status, tire status.
 
 ## ⚙️ Firmware Technical Overview
 The AeroLap firmware is written in C++ using the Arduino framework for the ESP32. It utilizes a layered architecture to separate low-level hardware control from high-level flight logic.
@@ -36,7 +39,7 @@ The AeroLap firmware is written in C++ using the Arduino framework for the ESP32
 Hardware assignments are centralized in `Pin.h` to ensure easy modification for different ESP32 board layouts. Key assignments include:
 
 ### BaseHardware
-The `BaseHardware` class acts as the **Hardware Abstraction Layer (HAL)**. It manages the raw interface with external libraries and handles memory buffering for the outputs.
+The `BaseHardware` class acts as the **Hardware Abstraction Layer (HAL)**. It manages the raw interface with external libraries and componenets while handling memory buffering for the outputs.
 
 * **Abstraction:** Wraps `Adafruit_NeoPixel` and `DIYables_4Digit7Segment_74HC595` logic.
 * **Buffering:** Maintains internal `LEDBar` and `DisplayBuffer` structures. This allows the system to calculate changes in memory and "render" them to the physical hardware in a single batch call, preventing flickering.
@@ -69,6 +72,16 @@ The `FlightTelemetry` class manages the communication contract between the Pytho
 * **State Conversion:** Converts raw simulator values into usable flight enums:
     * **Gear:** `0` or `16383` are mapped to `UP` or `DOWN`, while intermediate values trigger the `TRANSITIONING` state.
     * **Flaps:** Scaled from raw sim units ($0$ to $16383$) to a standard $0$ to $8$ index.
+
+### Flight Data Flow
+_From the Raw Bytes being sent from the simulator to the Hardware Pin_
+Flight data arrives to the FSUIPC bridge then is translated to be sent to the ESP32 via the **Python Bridge**. From the bridge, flight data makes it to **FlightTelemetry** which takes the data and decodes the raw bytes to the custom data structure that contains the various states to be tracked and displayed on the hardware. After this translation, the data, now wrapped in the custom data structure, makes it to the **FlightHardware** class which takes it and sets the **BaseHardware** objects depending on what values map to what hardware outputs. Finally, **BaseHardware** communicates with the individual pins and sends custom byte messages to set the LEDs or 7-segment displays to display desired result. 
+
+### RacingHardware
+To be implemented. High level behavioral logic for the vehicle. 
+
+### RacingTelemetry
+To be implemented. Contains the communication contract between the bridge and the ESP32, managing high level states and values to send to the RacingHardware class.
 
 ## 💻 Tech Stack
 
