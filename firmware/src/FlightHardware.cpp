@@ -4,6 +4,89 @@
 
 #include "../include/FlightHardware.h"
 
+#include <bits/regex_constants.h>
+
+
+void FlightHardware::updateRotaryMode() {
+    // need to select the next mode AND configure all settings
+
+    switch (rotary_param.mode) {
+        case ApHeading:
+            // switch to altitude
+            rotary_param.mode         = ApAltitude;
+            rotary_param.value        = fd.autopilot.altitude;
+            rotary_param.range_upper  = -1;
+            rotary_param.range_lower  = 0;
+            rotary_param.change_delta = 500;
+            rotary_param.displayOnly  = false;
+            break;
+        case ApAltitude:
+            // switch to speed
+            rotary_param.mode         = ApSpeed;
+            rotary_param.value        = fd.autopilot.speed;
+            rotary_param.range_upper  = 500;
+            rotary_param.range_lower  = 0;
+            rotary_param.change_delta = 25;
+            rotary_param.displayOnly  = false;
+            break;
+        case ApSpeed:
+            // switch to flap
+            rotary_param.mode         = Flap;
+            rotary_param.value        = static_cast<float>(fd.flapPosition);
+            rotary_param.range_upper  = 4;
+            rotary_param.range_lower  = 0;
+            rotary_param.change_delta = -1;
+            rotary_param.displayOnly  = true;
+        default:
+            // switch to heading
+            rotary_param.mode         = ApHeading;
+            rotary_param.value        = fd.autopilot.heading;
+            rotary_param.range_upper  = 360;
+            rotary_param.range_lower  = 0;
+            rotary_param.change_delta = 1;
+            rotary_param.displayOnly  = false;
+    }
+}
+
+void FlightHardware::updateRotaryValueUp() {
+    if (rotary_param.displayOnly) return; // do nothing if its display only
+
+    if (rotary_param.value + rotary_param.change_delta > rotary_param.range_upper) {
+        rotary_param.value = rotary_param.range_upper;
+    } else {
+        rotary_param.value += rotary_param.change_delta;
+    }
+    // then push our changes to reflect
+    pushUpdatedRotaryValue();
+}
+
+void FlightHardware::updateRotaryValueDown() {
+    if (rotary_param.displayOnly) return; // do nothing if its display only
+
+    if (rotary_param.value - rotary_param.change_delta < rotary_param.range_lower) {
+        rotary_param.value = rotary_param.range_lower;
+    } else {
+        rotary_param.value -= rotary_param.change_delta;
+    }
+    // then push our changes to reflect
+    pushUpdatedRotaryValue();
+}
+
+void FlightHardware::pushUpdatedRotaryValue() {
+    switch (rotary_param.mode) {
+        case ApHeading:
+            fd.autopilot.heading = rotary_param.value;
+            break;
+        case ApAltitude:
+            fd.autopilot.altitude = rotary_param.value;
+            break;
+        case ApSpeed:
+            fd.autopilot.speed = rotary_param.value;
+            break;
+        default:
+            break;
+    }
+}
 
 void FlightHardware::updateAllDisplays() {
     // left display is AIRSPEED
@@ -15,10 +98,12 @@ void FlightHardware::updateAllDisplays() {
     int formattedAltitude = static_cast<int>(fd.altitude/10.0f);
     hw.updateSegmentDisplay(Pin::RIGHT_DIO, formattedAltitude, 2);
 
-    // center display is FLAP POSITION
-    int flapPosition = fd.flapPosition;
-    bool isFull = fd.flapPosition == ad.flapFull;
-    hw.updateSegmentDisplay(Pin::CENTER_DIO, flapPosition, isFull); // show decimal if flaps are full
+    // center display is ROTARY SELECTION VALUE
+    int rotaryValue = rotary_param.value;
+    // TODO: need to make this format of like H256, where it has a key and then also the value
+    // TODO: for alt need this to be like A035 -> 3,500ft, A100 -> 10,000ft
+    bool isDisplayOnly = rotary_param.displayOnly;
+    hw.updateSegmentDisplay(Pin::CENTER_DIO, rotaryValue, isDisplayOnly); // show decimal the value is display-only
 }
 
 void FlightHardware::updateAllLights() {

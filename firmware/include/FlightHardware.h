@@ -4,6 +4,18 @@
 #include "BaseHardware.h"
 #include "FlightTelemetry.h"
 
+// Selection for the current setting to modify using the rotary encoder. Toggled with button
+enum rotaryMode {ApHeading, ApAltitude, ApSpeed, Flap};
+
+struct rotaryParam {
+    rotaryMode mode = ApHeading;
+    float value = 0;
+    float range_upper = 360;
+    float range_lower = 0;
+    float change_delta = 1;
+    bool displayOnly = false;
+};
+
 class FlightHardware {
     BaseHardware& hw;
     FlightData& fd;
@@ -27,8 +39,20 @@ class FlightHardware {
     bool lastApState = false;
     uint32_t apDisconnectTime = 0;
 
+    // configure the rotary parameter
+    rotaryParam rotary_param{};
+
 public:
     FlightHardware(BaseHardware& hw, FlightData& fd, AircraftData& ad) : hw(hw), fd(fd), ad(ad) {}
+
+    // when button is pressed, update the rotary mode and configure all settings
+    void updateRotaryMode();
+    //
+    void updateRotaryValueUp();
+    void updateRotaryValueDown();
+    // apply the changes made to the rotary value to the actual fd
+    void pushUpdatedRotaryValue();
+
 
     // actually render all the changes from buffers to the hardware
     void updateAllDisplays();

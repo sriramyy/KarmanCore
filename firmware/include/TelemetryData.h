@@ -32,6 +32,7 @@ struct Autopilot {
 
     float heading;
     float altitude;
+    float speed;
 };
 
 // each flight data package, actual telemetry

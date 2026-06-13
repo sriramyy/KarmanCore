@@ -6,7 +6,7 @@
 
 
 void BaseHardware::begin(uint8_t ledBrightness) {
-    // init neopiexels
+    // init neopixels
     topStrip.begin();
     bottomStrip.begin();
     topStrip.setBrightness(ledBrightness);
