@@ -12,4 +12,7 @@ add_executable(esp_core src/main.cpp
         src/BaseHardware.cpp
         include/BaseHardware.h
         src/FlightHardware.cpp
-        include/FlightHardware.h)
+        include/FlightHardware.h
+        src/DataPacket.cpp
+        include/DataPacket.h
+)
